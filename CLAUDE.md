@@ -52,22 +52,33 @@ Transversal: **Método Agarra Vuelo** → comprender → priorizar → proponer 
 
 ## Diseño (ya elegido — NO proponer otra paleta)
 
-Paleta **"Despegue"** (dirección moderna y tecnológica; NO usar los colores actuales de Gama):
-- Azul profundo `#0F2A43` (token `azul`) — fondos oscuros; con texto claro/arena, NUNCA tinta.
-- Acento turquesa `#17B7A6` (token `turquesa`) — con texto oscuro/tinta, NUNCA blanco; como texto SOLO sobre fondo azul (sobre arena falla AA).
-- Arena clara `#F5F3ED` (token `arena`) — fondo claro / texto sobre azul.
-- Texto `#14202B` (token `tinta`).
-- Acento secundario FUCSIA (energía/destellos, uso moderado): `#EC4899` (token `fucsia`) SOLO sobre fondo azul (texto grande); `#B21E68` (token `fucsia-oscuro`) para texto sobre fondo claro/arena.
+**DIRECCIÓN DEFINITIVA: base OSCURA "carbón + jerarquía"** (reemplazó a la dirección clara "Despegue sobre arena" — el fondo claro `arena` quedó DESCARTADO). Paleta EXTENDIDA con jerarquía (el flúor plano #2FE3CE/#FF5CB1 quedó atrás):
+- Carbón en 3 NIVELES (profundidad de capas: fondo < superficie < tarjeta): `carbon` #121317 (fondo página), `carbon-superficie` #171A20 (superficies/zonas), `carbon-tarjeta` #1D2129 (tarjetas).
+- Texto claro `#EAF1F4` (token `texto-claro`).
+- Turquesa en 3 tonos: `turquesa-claro` #7EEADC (detalles finos, links, líneas), `turquesa` BASE #17B7A6 (botones y acentos principales), `turquesa-profundo` #0E5F57 (superficies/bordes/fondos de insignias — NO texto; sobre él va texto claro).
+- `fucsia` #FF4FA3 = color "PREMIO": SOLO el/los aviones, algún destello y 1-2 highlights puntuales. NO en chips/subrayados/íconos.
+- `violeta` #8B7CF6 (token nuevo) — íconos secundarios, gradientes y transiciones turquesa↔fucsia.
+- Tinta `#14202B` (token `tinta`) — solo para texto sobre rellenos brillantes (turquesa base).
+- Regla de contraste (AA siempre): sobre carbón/superficie → texto claro o turquesa-claro; botones = relleno turquesa base + texto tinta; insignias = relleno turquesa-profundo + texto/número CLARO (tinta NO pasa sobre teal profundo). Nada de texto oscuro sobre fondos oscuros.
+- Textura de fondo LOW-POLY / "plexus" (malla de triángulos con nodos, muy tenue, `components/FondoSeccion.tsx`) + 2-3 manchas de luz difusas (radial-gradients enormes teal/violeta, opacidad bajísima) para dar atmósfera. Varía densidad entre secciones.
+- Tarjetas: GLASS (semitranslúcido + backdrop-blur + borde) con gradiente sutil (teal-profundo/violeta→carbon-tarjeta); hover sube + sombra + el ícono cambia de color. Solo donde el texto cumpla AA.
 
 Tipografía: display **Space Grotesk** (token `font-display`, títulos) + texto **Inter** (token `font-sans`).
 
 **Sistema de movimiento (ya construido, reutilizar en secciones nuevas):**
 - `components/Reveal.tsx` — aparición fade+subida al entrar en viewport (IntersectionObserver, con red de seguridad).
 - `components/FlightTrail.tsx` — "estela de vuelo": path curvo + avión `public/avion-papel.png` (next/image) que sigue la tangente según el scroll. Decorativo (aria-hidden, pointer-events:none). Envuelve las secciones en `page.tsx`.
-- `components/TrailTitle.tsx` — título que "reacciona" (cambia de color + subrayado, efecto persistente) cuando el avión lo alcanza. Color de reacción por fondo: azul→fucsia/turquesa; arena→fucsia-oscuro/azul.
-- `components/Header.tsx` — navbar sticky con `public/logo.png` (fondo claro para que el logo oscuro se lea) + CTA.
-- Assets: `public/avion-papel.png` (avión que vuela), `public/logo.png` (header).
+- `components/TrailTitle.tsx` — título que "reacciona" (cambia de color + subrayado) cuando el avión lo alcanza. Sobre carbón, reacción a turquesa/fucsia flúor.
+- `components/StaggerHeading.tsx` — títulos con letras que suben escalonadas al entrar en viewport (aria-label con texto completo; letras aria-hidden). Se combina con TrailTitle.
+- `components/Header.tsx` — navbar sticky con `public/logo.png` + CTA; animación de entrada del logo (`.logo-entrada`).
+- `components/Clientes.tsx` — banda "Confían en nosotros" con slots placeholder "Pronto" (reemplazar por logos reales cuando existan).
+- `components/FondoSeccion.tsx` — textura de fondo LOW-POLY / "plexus" (malla de triángulos con nodos, muy tenue, decorativa; SVG estático determinista). Reemplazó a las ondas/escama.
+- `components/AvionAnillo.tsx` — segundo avión que ORBITA el anillo del Método, ligado al scroll (bidireccional), solo desktop. El avión LATERAL (en FlightTrail) baja recto por el carril y va al doble de tamaño.
+- `components/FormularioLead.tsx` — formulario de lead (glass), sección `id="contacto"` (los CTA "¿Conversemos?" aterrizan ahí). Envío NO conectado: hay un `FORMSPREE_ENDPOINT = ""` con TODO; falta el endpoint real de Formspree de la clienta para activar el POST.
+- Assets/logos: `public/avion-papel.png` (avión que vuela). Logos: `public/logo-turquesa.png` (header, sobre carbón, sin pastilla), `public/logo-sin-avion.png` (centro del medallón del Método), `public/logo-blanco.png` (alternativa monocroma), `public/logo.png` (original, texto oscuro — no usar sobre carbón).
 - SIEMPRE respetar `prefers-reduced-motion` (deja estado final estático) y las reglas de contraste de arriba. Mobile-first. Las nuevas secciones deben usar el mismo carril/padding izquierdo (pl-10 sm:pl-12 md:pl-14 lg:px-6) para no pisar la estela.
+
+**Estructura actual de la página** (`app/page.tsx`, orden): Header (sticky, `logo-blanco.png`, menú Método/Servicios/Equipo/Contacto + CTA; hamburguesa accesible en móvil) → Hero (2 columnas: contenido izq + FORMULARIO de contacto der, `id="contacto"`; el form es el contacto único, envío sin conectar) → Método (círculo, centro texto "MÉTODO/Agarra Vuelo", `AvionAnillo` orbita el anillo) → Servicios (4 tarjetas clickeables, estado activo temporal borde 2px+glow en `var(--acento)` por tarjeta, abren `ServicioModal`) → SelectorModalidad (`id="modalidad"`, termómetro slider) → Equipo (`id="equipo"`, 3 socios, foto abre `EquipoModal`) → Clientes (oculto por flag `MOSTRAR_CLIENTES`). Fondo: `components/FondoGlobal.tsx` = UNA capa fija continua (malla low-poly + manchas de luz); las secciones son TRANSPARENTES (no repetir fondo por sección). Datos de tarjetas/socios en `servicios-data.ts` / `equipo-data.ts` (data-driven). Modales comparten patrón a11y (foco atrapado, aria-modal, Escape/overlay/X, devuelve foco).
 
 El copy final lo entrega la clienta (Antonia); adaptarlo a componentes, **no inventar textos**.
 
@@ -84,6 +95,12 @@ con formulario simple. Publicación gratuita en Vercel (Hobby). Sin Supabase por
 
 **Fase 2 del negocio (NO construir ahora):**
 curso web con módulos/avance, panel `/admin` de gestión (leads/métricas/socios) y chatbot Gemini.
+
+**Backlog de la landing (anotado, NO construir hasta pedirlo — ref: `docs/7-Direccion-visual-movimiento.md`):**
+- Sección **Equipo** (Fase 4): los 3 socios (foto, rol, una línea).
+- Migrar contenido restante de la web actual: **portafolio con imágenes**, **catálogo/planes con PDF descargable**, lista larga de servicios **"¿Más concreto?"**, y **FAQ**.
+- **Formspree**: pegar el endpoint real en `FormularioLead.tsx` (`FORMSPREE_ENDPOINT`) y activar el POST (hoy el envío está en estado "próximamente").
+- **Banda de clientes**: oculta tras flag `MOSTRAR_CLIENTES`; activar cuando haya logos reales.
 
 ## Reglas de trabajo (IMPORTANTE)
 

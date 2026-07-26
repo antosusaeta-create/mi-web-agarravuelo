@@ -1,36 +1,179 @@
 @import "tailwindcss";
 
 :root {
-  color-scheme: light;
+  color-scheme: dark;
+
+  /* Carbón en 3 niveles: dan profundidad de capas (fondo < superficie < tarjeta) */
+  --carbon: #171a20; /* fondo de página */
+  --carbon-superficie: #1d2129; /* superficies/zonas (secciones que se diferencian) */
+  --carbon-tarjeta: #232a35; /* tarjetas (la capa más "elevada") */
+
+  /* Texto principal por defecto sobre el carbón */
+  --texto-claro: #eaf1f4;
+
+  /* Ya NO es fondo de página: color de relleno auxiliar (hover de botones) */
   --azul: #0f2a43;
-  --turquesa: #17b7a6;
-  --arena: #f5f3ed;
+
+  /* Turquesa en 3 tonos, cada uno con un rol distinto en la jerarquía */
+  --turquesa-claro: #7eeadc; /* detalles finos, links, líneas, acentos pequeños */
+  --turquesa: #17b7a6; /* BASE: botones y acentos principales */
+  --turquesa-profundo: #0e5f57; /* superficies/bordes/fondos de insignias (nunca texto) */
+
+  /* Violeta: puente entre turquesa y fucsia (íconos secundarios, gradientes) */
+  --violeta: #8b7cf6;
+
+  /* Fucsia: color "premio", muy racionado (avión + 1-2 highlights deliberados) */
+  --fucsia: #ff4fa3;
+
+  /* Texto oscuro para usar SOLO sobre rellenos brillantes (turquesa/texto-claro) */
   --tinta: #14202b;
-  /* Acento de energía: fucsia claro SOLO sobre azul, fucsia oscuro SOLO sobre arena/claro */
-  --fucsia: #ec4899;
-  --fucsia-oscuro: #b21e68;
 }
 
 @theme inline {
+  --color-carbon: var(--carbon);
+  --color-carbon-superficie: var(--carbon-superficie);
+  --color-carbon-tarjeta: var(--carbon-tarjeta);
+  --color-texto-claro: var(--texto-claro);
   --color-azul: var(--azul);
+  --color-turquesa-claro: var(--turquesa-claro);
   --color-turquesa: var(--turquesa);
-  --color-arena: var(--arena);
+  --color-turquesa-profundo: var(--turquesa-profundo);
+  --color-violeta: var(--violeta);
   --color-tinta: var(--tinta);
   --color-fucsia: var(--fucsia);
-  --color-fucsia-oscuro: var(--fucsia-oscuro);
   --font-display: var(--font-display);
   --font-sans: var(--font-sans);
 }
 
+/* Tarjetas con profundidad: degradado MUY sutil entre un tono de marca y el
+   carbón de tarjeta (en vez de un relleno plano), manteniendo el glass real
+   (backdrop-blur) que ya aplica cada tarjeta vía Tailwind. */
+.tarjeta-degradado-teal {
+  background: linear-gradient(160deg, rgba(14, 95, 87, 0.4) 0%, var(--carbon-tarjeta) 60%);
+}
+
+.tarjeta-degradado-violeta {
+  background: linear-gradient(160deg, rgba(139, 124, 246, 0.22) 0%, var(--carbon-tarjeta) 60%);
+}
+
+/* Variante clara del teal (pilar "Vende mejor") */
+.tarjeta-degradado-teal-claro {
+  background: linear-gradient(160deg, rgba(126, 234, 220, 0.22) 0%, var(--carbon-tarjeta) 60%);
+}
+
+/* Fucsia MUY suave (pilar "Difunde"): el fucsia es color "premio", muy racionado,
+   así que aquí su presencia es apenas un tinte, no un protagonismo. */
+.tarjeta-degradado-fucsia {
+  background: linear-gradient(160deg, rgba(255, 79, 163, 0.14) 0%, var(--carbon-tarjeta) 60%);
+}
+
+/* Tarjeta del formulario del Hero: gradiente doble teal -> violeta, algo más
+   marcado que las tarjetas de Servicios/Método porque vive sola, a la par
+   del titular, y necesita distinguirse como "la" tarjeta protagonista. */
+.tarjeta-degradado-hero {
+  background: linear-gradient(
+    160deg,
+    rgba(23, 183, 166, 0.28) 0%,
+    rgba(139, 124, 246, 0.2) 55%,
+    var(--carbon-tarjeta) 100%
+  );
+}
+
+/* Tarjetas de Servicios: estado activo TEMPORAL (hover / foco de teclado /
+   popup abierto vía data-activo) en el color propio de cada tarjeta, que se
+   inyecta como var(--acento). En reposo, todas parejas (borde tenue). */
+.tarjeta-servicio {
+  border-color: rgba(234, 241, 244, 0.12);
+  transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+}
+.tarjeta-servicio:hover,
+.tarjeta-servicio:focus-visible,
+.tarjeta-servicio[data-activo="true"] {
+  border-color: var(--acento);
+  box-shadow: 0 12px 28px -10px rgba(0, 0, 0, 0.5), 0 0 26px -6px var(--acento);
+  transform: translateY(-4px);
+}
+@media (prefers-reduced-motion: reduce) {
+  .tarjeta-servicio {
+    transition: none;
+  }
+  .tarjeta-servicio:hover,
+  .tarjeta-servicio:focus-visible,
+  .tarjeta-servicio[data-activo="true"] {
+    transform: none;
+  }
+}
+
+/* Slider del Selector de modalidad: track con gradiente de marca (violeta ->
+   turquesa -> fucsia) y thumb propio, con buen tamaño de toque (28px). Los
+   pseudo-elementos ::-webkit-slider-* / ::-moz-range-* no los cubre el
+   selector global `*`, así que su transición se apaga aparte más abajo. */
+.selector-range {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 28px;
+  background: transparent;
+  cursor: pointer;
+}
+
+.selector-range::-webkit-slider-runnable-track {
+  height: 10px;
+  border-radius: 9999px;
+  background: linear-gradient(to right, var(--violeta) 0%, var(--turquesa) 50%, var(--fucsia) 100%);
+}
+
+.selector-range::-moz-range-track {
+  height: 10px;
+  border-radius: 9999px;
+  background: linear-gradient(to right, var(--violeta) 0%, var(--turquesa) 50%, var(--fucsia) 100%);
+}
+
+.selector-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 28px;
+  height: 28px;
+  margin-top: -9px;
+  border-radius: 9999px;
+  background: var(--texto-claro);
+  border: 3px solid var(--carbon);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.45);
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.selector-range::-moz-range-thumb {
+  width: 28px;
+  height: 28px;
+  border-radius: 9999px;
+  background: var(--texto-claro);
+  border: 3px solid var(--carbon);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.45);
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.selector-range:hover::-webkit-slider-thumb,
+.selector-range:focus-visible::-webkit-slider-thumb {
+  transform: scale(1.08);
+}
+
+.selector-range:hover::-moz-range-thumb,
+.selector-range:focus-visible::-moz-range-thumb {
+  transform: scale(1.08);
+}
+
 body {
-  background: var(--arena);
-  color: var(--tinta);
+  background: var(--carbon);
+  color: var(--texto-claro);
   font-family: var(--font-sans), Arial, Helvetica, sans-serif;
 }
 
 /* El header queda sticky: al saltar a un ancla, deja aire para que no tape el título */
 html {
-  scroll-padding-top: 5rem;
+  scroll-padding-top: 6rem;
 }
 
 :focus-visible {
@@ -53,6 +196,101 @@ html {
   animation: pulse-soft 3.5s ease-in-out infinite;
 }
 
+/* Ciclo del Método: cada insignia se "ilumina" en su turno, en secuencia,
+   simulando que el recorrido avanza de paso en paso (puro CSS, sin JS). */
+@keyframes paso-activo {
+  0% {
+    box-shadow: 0 0 0 6px rgba(23, 183, 166, 0.35);
+    transform: scale(1.12);
+  }
+  14% {
+    box-shadow: 0 0 0 0 rgba(23, 183, 166, 0);
+    transform: scale(1);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(23, 183, 166, 0);
+    transform: scale(1);
+  }
+}
+
+.paso-badge {
+  animation: paso-activo 7.5s ease-in-out infinite;
+  animation-delay: var(--ciclo-delay, 0s);
+}
+
+/* Fondo decorativo (textura escama) de cada sección: deriva lentísima,
+   casi imperceptible, solo para dar sensación de profundidad. */
+@keyframes deriva-suave {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+  50% {
+    transform: translate3d(1.5%, 1%, 0);
+  }
+}
+
+.fondo-deriva {
+  animation: deriva-suave 60s ease-in-out infinite;
+}
+
+/* Entrada del logo del header: fade + deslizamiento + leve giro, una sola
+   vez al cargar (como si el avioncito recién se acomodara). */
+@keyframes logo-entrada {
+  0% {
+    opacity: 0;
+    transform: translate(-10px, -8px) rotate(-6deg) scale(0.94);
+  }
+  100% {
+    opacity: 1;
+    transform: translate(0, 0) rotate(0deg) scale(1);
+  }
+}
+
+.logo-entrada {
+  animation: logo-entrada 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* Entrada sutil del modal de Servicios: overlay con fade, contenido con
+   fade + leve escala/deslizamiento. Se usan solo bajo motion-safe: (Tailwind
+   ya las apaga con prefers-reduced-motion sin que haga falta código extra). */
+@keyframes modal-overlay-entrada {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes modal-contenido-entrada {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Entrada del popup de Equipo: el modal "sale" desde la foto que lo abrió.
+   --dx/--dy (inline, calculados en EquipoModal.tsx a partir de
+   getBoundingClientRect de la foto clickeada) son el desplazamiento entre esa
+   foto y el centro de la pantalla, donde el modal reposa. Con movimiento
+   reducido se usa en su lugar `modal-overlay-entrada` (fade puro, ya
+   definida arriba): sin escala ni desplazamiento, solo aparece. */
+@keyframes equipo-modal-origen {
+  from {
+    opacity: 0;
+    transform: translate(var(--dx, 0px), var(--dy, 0px)) scale(0.2);
+  }
+  to {
+    opacity: 1;
+    transform: translate(0, 0) scale(1);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -71,6 +309,41 @@ html {
 
   .reveal-item {
     opacity: 1 !important;
+    transform: none !important;
+  }
+
+  /* Ciclo del Método: sin iluminación secuencial, insignias en reposo */
+  .paso-badge {
+    animation: none !important;
+    box-shadow: none !important;
+    transform: none !important;
+  }
+
+  /* Fondos decorativos: quietos, sin deriva */
+  .fondo-deriva {
+    animation: none !important;
+    transform: none !important;
+  }
+
+  /* Logo del header: aparece directo, sin entrada animada */
+  .logo-entrada {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+
+  /* Títulos con stagger de letras: todas en su lugar, sin animación */
+  .stagger-letter {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+
+  /* Selector de modalidad: el thumb no "crece" al pasar el mouse/foco,
+     el cambio de zona queda instantáneo (el `*` global no cubre estos
+     pseudo-elementos nativos del input range) */
+  .selector-range::-webkit-slider-thumb,
+  .selector-range::-moz-range-thumb {
+    transition: none !important;
     transform: none !important;
   }
 }

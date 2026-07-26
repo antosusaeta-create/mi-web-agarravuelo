@@ -27,7 +27,7 @@ export default function FloatingCTA() {
   }, []);
 
   const baseClasses =
-    "fixed bottom-5 right-5 z-50 inline-flex items-center justify-center rounded-full bg-turquesa px-6 py-4 font-display text-sm font-semibold text-tinta shadow-lg shadow-azul/25 transition-colors hover:bg-azul hover:text-arena focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-azul sm:px-7 sm:text-base";
+    "fixed bottom-5 right-5 z-50 inline-flex items-center justify-center rounded-full bg-turquesa px-6 py-4 font-display text-sm font-semibold text-tinta shadow-lg shadow-black/40 transition-colors hover:bg-azul hover:text-texto-claro focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-turquesa sm:px-7 sm:text-base";
 
   const visibilidadClasses = reducedMotion
     ? visible

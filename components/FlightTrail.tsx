@@ -4,39 +4,50 @@ import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import { usePrefersReducedMotion } from "@/components/usePrefersReducedMotion";
 
-const ANCHO_VIEWBOX = 24;
-const PLANE_SIZE = 32;
+const PLANE_SIZE = 64;
 // El PNG del avión trae la punta apuntando levemente arriba-derecha
 // (~15° sobre la horizontal). Este offset rota la imagen para que esa
 // punta siga la tangente real del recorrido. Si el avión se ve "al revés"
 // al cambiar el PNG, ajusta este número.
 const TIP_OFFSET_DEG = 15;
+// La estela es la ESTELA del avión: debe terminar detrás de su cola, nunca
+// cruzarlo. Este es el largo (en px de recorrido, mismas unidades que
+// getTotalLength) que se le "recorta" al tramo dibujado respecto de la
+// posición real del avión, para que la punta del trazo quede justo tras la
+// cola en vez de asomarse bajo el fuselaje o la punta.
+const TRAIL_TAIL_OFFSET = PLANE_SIZE * 0.34;
 
 /**
- * Construye un trazo vertical con una leve ondulación (curvas suaves tipo
- * "S"), para que la estela no sea una recta aburrida. Se mantiene dentro del
- * carril angosto reservado (no invade el texto).
+ * A qué distancia del borde izquierdo vive el carril, según el ancho real.
+ * Desde md (≥768) el avión mide 64px, así que el centro del carril debe estar
+ * al menos a PLANE_SIZE/2 + la amplitud de la ondulación del borde para que el
+ * avión quepa ENTERO (no lo recorte el overflow-hidden) — de ahí los 40px.
+ * En móvil/large-phone se mantiene pegado al borde (como ya estaba bien).
  */
-function construirPathD(alto: number, ancho: number) {
-  const medioX = ancho / 2;
-  if (alto <= 1) return `M ${medioX} 0 L ${medioX} ${alto}`;
+function calcularCarrilX(ancho: number) {
+  if (ancho >= 768) return 40;
+  if (ancho >= 640) return 8;
+  return 4;
+}
 
-  const amplitud = ancho * 0.24;
+/** Tramo recto con una leve ondulación (curvas suaves), para que el carril no sea una recta aburrida. */
+function segmentoOndulado(desdeY: number, hastaY: number, x: number, direccionInicial: number) {
+  const amplitud = 6;
   const largoSegmento = 240;
 
-  const puntos: { x: number; y: number }[] = [{ x: medioX, y: 0 }];
-  let y = 0;
-  let direccion = 1;
-  while (y < alto) {
-    const siguienteY = Math.min(y + largoSegmento, alto);
-    const esUltimo = siguienteY >= alto;
-    const x = esUltimo ? medioX : medioX + direccion * amplitud;
-    puntos.push({ x, y: siguienteY });
+  const puntos: { x: number; y: number }[] = [{ x, y: desdeY }];
+  let y = desdeY;
+  let direccion = direccionInicial;
+  while (y < hastaY) {
+    const siguienteY = Math.min(y + largoSegmento, hastaY);
+    const esUltimo = siguienteY >= hastaY;
+    const px = esUltimo ? x : x + direccion * amplitud;
+    puntos.push({ x: px, y: siguienteY });
     y = siguienteY;
     direccion *= -1;
   }
 
-  let d = `M ${puntos[0].x} ${puntos[0].y}`;
+  let d = "";
   for (let i = 1; i < puntos.length; i++) {
     const prev = puntos[i - 1];
     const curr = puntos[i];
@@ -47,9 +58,20 @@ function construirPathD(alto: number, ancho: number) {
 }
 
 /**
+ * Construye el trazo completo: el carril recto (con leve ondulación) de
+ * arriba a abajo. El Método ya no desvía este carril hacia su anillo: el
+ * anillo tiene su propio avión independiente (ver AvionAnillo), que orbita
+ * ligado al scroll dentro de esa sección.
+ */
+function construirPathD(alto: number, laneX: number) {
+  if (alto <= 1) return `M ${laneX} 0 L ${laneX} ${alto}`;
+  return `M ${laneX} 0${segmentoOndulado(0, alto, laneX, 1)}`;
+}
+
+/**
  * Estela de vuelo: un trazo curvo que conecta los títulos de cada sección de
  * arriba hacia abajo, con un avioncito de papel que la recorre según el
- * scroll. Decorativo: pointer-events-none, no debe tapar contenido.
+ * scroll. Decorativo: pointer-events-none, no tapa contenido.
  */
 export default function FlightTrail() {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -57,16 +79,16 @@ export default function FlightTrail() {
   const planeRef = useRef<HTMLDivElement>(null);
   const totalLengthRef = useRef(0);
 
-  const [height, setHeight] = useState(0);
-  const [puntoBase, setPuntoBase] = useState({ x: ANCHO_VIEWBOX / 2, y: 0, angulo: 90 });
+  const [dims, setDims] = useState({ width: 0, height: 0 });
+  const [puntoBase, setPuntoBase] = useState({ x: 0, y: 0, angulo: 90 });
   const reducedMotion = usePrefersReducedMotion();
 
-  // Mide el alto del contenedor (abarca todas las secciones envueltas en page.tsx)
+  // Mide el ancho/alto del contenedor (abarca todas las secciones en page.tsx)
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
 
-    const medir = () => setHeight(container.offsetHeight);
+    const medir = () => setDims({ width: container.offsetWidth, height: container.offsetHeight });
     const frame = requestAnimationFrame(medir);
     const ro = new ResizeObserver(medir);
     ro.observe(container);
@@ -79,10 +101,12 @@ export default function FlightTrail() {
     };
   }, []);
 
-  const altoSvg = height || 1;
-  const pathD = construirPathD(altoSvg, ANCHO_VIEWBOX);
+  const altoSvg = dims.height || 1;
+  const anchoSvg = dims.width || 1;
+  const laneX = calcularCarrilX(anchoSvg);
+  const pathD = construirPathD(altoSvg, laneX);
 
-  // Recalcula el largo total del trazo cuando cambia su forma (alto de página)
+  // Recalcula el largo total del trazo cuando cambia su forma
   useEffect(() => {
     const path = pathRef.current;
     if (!path) return;
@@ -131,10 +155,14 @@ export default function FlightTrail() {
       const crudo = total > 0 ? (viewportH - rect.top) / total : 0;
       const progreso = Math.min(1, Math.max(0, crudo));
 
-      path.style.strokeDashoffset = `${largoTotal * (1 - progreso)}`;
+      const largo = progreso * largoTotal;
+      // La estela dibujada se detiene un poco antes del avión (en vez de
+      // llegar hasta su centro): así el extremo del trazo queda tras la
+      // cola y nunca la cruza ni la pisa.
+      const largoVisible = Math.max(0, largo - TRAIL_TAIL_OFFSET);
+      path.style.strokeDashoffset = `${largoTotal - largoVisible}`;
 
       if (planeEl) {
-        const largo = progreso * largoTotal;
         const eps = 1.5;
         const antes = path.getPointAtLength(Math.max(0, largo - eps));
         const despues = path.getPointAtLength(Math.min(largoTotal, largo + eps));
@@ -179,15 +207,14 @@ export default function FlightTrail() {
     <div
       ref={containerRef}
       aria-hidden="true"
-      className="pointer-events-none absolute inset-y-0 left-1 z-0 w-6 overflow-visible sm:left-2 md:left-4"
+      className="pointer-events-none absolute inset-0 z-0 overflow-hidden"
     >
       <svg
         width="100%"
         height="100%"
-        viewBox={`0 0 ${ANCHO_VIEWBOX} ${altoSvg}`}
+        viewBox={`0 0 ${anchoSvg} ${altoSvg}`}
         preserveAspectRatio="none"
         focusable="false"
-        className="overflow-visible"
       >
         {/* Tramo por recorrer: punteado y tenue, siempre visible como referencia */}
         <path
@@ -215,7 +242,7 @@ export default function FlightTrail() {
       {/* Avioncito de papel: decorativo, sigue la tangente del trazo */}
       <div
         ref={planeRef}
-        className="absolute left-0 top-0 h-8 w-8 select-none"
+        className="absolute left-0 top-0 h-16 w-16 select-none"
         style={planeEstiloInicial}
       >
         <Image

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Space_Grotesk, Inter } from "next/font/google";
 import Header from "@/components/Header";
+import FondoGlobal from "@/components/FondoGlobal";
 import "./globals.css";
 
 const spaceGrotesk = Space_Grotesk({
@@ -30,6 +31,7 @@ export default function RootLayout({
       className={`${spaceGrotesk.variable} ${inter.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
+        <FondoGlobal />
         <Header />
         {children}
       </body>

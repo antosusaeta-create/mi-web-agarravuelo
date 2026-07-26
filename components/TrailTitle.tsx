@@ -15,6 +15,12 @@ type TrailTitleProps = {
   reachedColorClassName: string;
   /** Clase bg-* para el subrayado que se dibuja */
   underlineColorClassName: string;
+  /**
+   * Nombre accesible del heading. Necesario cuando `children` es un efecto
+   * decorativo (ej. StaggerHeading con letras en spans aria-hidden): sin
+   * esto, el heading quedaría sin nombre accesible para lectores de pantalla.
+   */
+  ariaLabel?: string;
 };
 
 /**
@@ -30,6 +36,7 @@ export default function TrailTitle({
   baseColorClassName,
   reachedColorClassName,
   underlineColorClassName,
+  ariaLabel,
 }: TrailTitleProps) {
   const ref = useRef<HTMLElement | null>(null);
   const [alcanzado, setAlcanzado] = useState(false);
@@ -72,6 +79,7 @@ export default function TrailTitle({
   return (
     <Tag
       ref={ref as never}
+      aria-label={ariaLabel}
       className={`relative inline-block transition-colors duration-700 ease-out ${className} ${
         activo ? reachedColorClassName : baseColorClassName
       }`}
